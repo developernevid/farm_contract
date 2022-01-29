@@ -32,9 +32,10 @@ contract FarmContract is Ownable {
 
     function supplyTokenA(uint256 _amount) public onlyOwner {
         ERC20(tokenA).transferFrom(this.owner(), address(this), _amount);
+        if (totalDebenture > 0 ) payOffAllDebts();
     }
 
-    function payOffDebts() internal {
+    function payOffAllDebts() internal {
         for (uint i = 0; i < lenders.length; i++) {
             if (getTokenABalance() < debentureTable[lenders[i]]){
                 break;
@@ -74,7 +75,7 @@ contract FarmContract is Ownable {
     }
 
     function harvestRewardsInternal(address _account) internal {
-        if (supplyList[_account].timestamp == 0) return;
+        require (supplyList[_account].timestamp != 0, "nothing to harvest");
 
         uint stakingTime = block.timestamp - supplyList[_account].timestamp;
         uint256 rewardAmount = stakingTime * supplyList[_account].rewardRate * supplyList[_account].share;
@@ -82,12 +83,14 @@ contract FarmContract is Ownable {
         if (tokenABalance < rewardAmount) {
             uint256 debt = rewardAmount - tokenABalance;
             totalDebenture += debt;
-            debentureTable[_account] += debt;
+            debentureTable[_account] = debt;
+            lenders.push(_account);
             ERC20(tokenA).transfer(_account, tokenABalance);
         } else {
             ERC20(tokenA).transfer(_account, rewardAmount);
         }
 
+        ERC20(tokenB).transfer(_account, supplyList[_account].supplyAmount); 
         delete supplyList[_account]; // write default value of struct (https://docs.soliditylang.org/en/v0.8.11/types.html?highlight=delete#delete)
     }
 
