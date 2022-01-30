@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FarmContract is Ownable {
@@ -31,7 +31,7 @@ contract FarmContract is Ownable {
     }
 
     function supplyTokenA(uint256 _amount) public onlyOwner {
-        ERC20(tokenA).transferFrom(this.owner(), address(this), _amount);
+        IERC20(tokenA).transferFrom(this.owner(), address(this), _amount);
         if (totalDebenture > 0 ) payOffAllDebts();
     }
 
@@ -42,7 +42,7 @@ contract FarmContract is Ownable {
             }
             totalDebenture -= debentureTable[lenders[i]];
 
-            ERC20(tokenA).transfer(lenders[i], debentureTable[lenders[i]]);
+            IERC20(tokenA).transfer(lenders[i], debentureTable[lenders[i]]);
             removeDebenture(i);
         }
     }
@@ -64,7 +64,7 @@ contract FarmContract is Ownable {
         require(totalDebenture == 0, "Wait until the debt is paid off");
         require(_amount > 0, "supply must be more than zero");
 
-        ERC20(tokenA).transferFrom(msg.sender, address(this), _amount);
+        IERC20(tokenA).transferFrom(msg.sender, address(this), _amount);
 
         harvestRewardsInternal(msg.sender);
         supplyList[msg.sender] = SupplyInfo(block.timestamp, _amount, rewardRate, shareOfReward(_amount));
@@ -85,17 +85,17 @@ contract FarmContract is Ownable {
             totalDebenture += debt;
             debentureTable[_account] = debt;
             lenders.push(_account);
-            ERC20(tokenA).transfer(_account, tokenABalance);
+            IERC20(tokenA).transfer(_account, tokenABalance);
         } else {
-            ERC20(tokenA).transfer(_account, rewardAmount);
+            IERC20(tokenA).transfer(_account, rewardAmount);
         }
 
-        ERC20(tokenB).transfer(_account, supplyList[_account].supplyAmount); 
+        IERC20(tokenB).transfer(_account, supplyList[_account].supplyAmount); 
         delete supplyList[_account]; // write default value of struct (https://docs.soliditylang.org/en/v0.8.11/types.html?highlight=delete#delete)
     }
 
     function getTokenABalance() public view returns (uint256) {
-        return ERC20(tokenA).balanceOf(address(this));
+        return IERC20(tokenA).balanceOf(address(this));
     }
 
     function shareOfReward(uint256 _amount) internal view returns(uint256) {

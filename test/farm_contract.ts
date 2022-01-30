@@ -1,123 +1,72 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { task } from "hardhat/config";
 import { describe } from "mocha";
-import { FarmContract } from "../typechain";
+import { FarmContract, MintableERC20 } from "../typechain";
 
 describe("FarmContract", function () {
   let contract: FarmContract;
+  let tokenA: MintableERC20;
+  let tokenB: MintableERC20;
+  let governor: SignerWithAddress;
+  let alice: SignerWithAddress;
+  let bob: SignerWithAddress;
 
   beforeEach(async () => {
     const FarmContract = await ethers.getContractFactory("FarmContract");
-    contract = await FarmContract.deploy();
+    const ERC20 = await ethers.getContractFactory("MintableERC20");
+    [governor, alice, bob] = await ethers.getSigners();
+    // console.log("governor ", governor.address);
+    // console.log("alice ", alice.address);
+    // console.log("bob ", bob.address);
+    
+    tokenA = await ERC20.deploy("tokenA", "A");
+    tokenB = await ERC20.deploy("tokenB", "B");
+    contract = await FarmContract.deploy(tokenA.address, tokenB.address, 2);
+
+    tokenA.mint(governor.address, 10**6);
+    tokenA.approve(contract.address, 10**6);
+
+
+    tokenB.mint(alice.address, 700);
+    tokenB.connect(alice).approve(contract.address, 700);
+    tokenB.mint(bob.address, 300);
+    tokenB.connect(bob).approve(contract.address, 300);
+
   });
 
-  describe("sum", () => {
-    it("should return 5 when given parameters are 2 and 3", async function () {
+  describe("supplyTokenA", () => {
+    it("should transfer 100 tokens from governo to contract`s address", async function () {
       await contract.deployed();
 
-      const sum = await contract.sum(2, 3);
-
-      expect(sum).to.be.not.undefined;
-      expect(sum).to.be.not.null;
-      expect(sum).to.be.not.NaN;
-      expect(sum).to.equal(5);
+      contract.supplyTokenA(100);
+      const balance = await contract.getTokenABalance();
+      console.log(balance.toString());
+      // expect(balance).to.equal(100);
     });
   });
 
 
-  describe("transferOwnership", () => {
-    it("call transferingOwnership", async function () {
-      const [oldOwner,newOwner] = await ethers.getSigners();
-      context("subcall it clause", ()=>{});
-      console.log("oldOwner", oldOwner.address);
-      console.log("newOwner", newOwner.address);
-      await contract.deployed();
+  // describe("transferOwnership", () => {
+  //   it("call transferingOwnership", async function () {
+  //     await contract.deployed();
+      
+  //     let result : string = await contract.owner();
+  //     expect(result).to.equal(oldOwner.address);
+      
+  //     await contract.transferOwnership(newOwner.address);
+  //     result = await contract.owner();
+  //     expect(result).to.equal(newOwner.address);
+  //   });
+
+  //   it("check state", async function () {
+  //     const [oldOwner,newOwner] = await ethers.getSigners();
+  //     await contract.deployed();
       
 
-      let result : string = await contract.owner();
-      expect(result).to.equal(oldOwner.address);
-      
-      await contract.transferOwnership(newOwner.address);
-      result = await contract.owner();
-      expect(result).to.equal(newOwner.address);
-    });
+  //     let result : string = await contract.owner();
+  //     expect(result).to.equal(oldOwner.address);
+  //   });
+  // });
 
-    it("check state", async function () {
-      const [oldOwner,newOwner] = await ethers.getSigners();
-      await contract.deployed();
-      
-
-      let result : string = await contract.owner();
-      expect(result).to.equal(oldOwner.address);
-    });
-  });
-
-//   describe("getMyLuckyNumber", () => {
-//     it("should return 5 when given 5", async () => {
-//       await contract.deployed();
-
-//       await contract.saveLuckyNumber(5);
-//       const myLuckyNumber = await contract.getMyLuckyNumber();
-
-//       expect(myLuckyNumber).to.be.not.undefined;
-//       expect(myLuckyNumber).to.be.not.null;
-//       expect(myLuckyNumber.toNumber()).to.equal(5);
-//     });
-//   });
-
-//   describe("saveLuckyNumber", () => {
-//     it("should revert with message 'Lucky number should not be 0.', when given 0", async () => {
-//       await contract.deployed();
-
-//       await expect(contract.saveLuckyNumber(0)).to.be.revertedWith(
-//         "Lucky number should not be 0."
-//       );
-//     });
-
-//     it("should revert with message 'You already have a lucky number.', when owner already have saved a lucky number", async () => {
-//       await contract.deployed();
-
-//       await contract.saveLuckyNumber(6);
-
-//       await expect(contract.saveLuckyNumber(7)).to.be.revertedWith(
-//         "You already have a lucky number."
-//       );
-//     });
-
-//     it("should retrieve 66 when recently given lucky number is 66", async () => {
-//       await contract.deployed();
-
-//       await contract.saveLuckyNumber(66);
-//       const storedLuckyNumber = await contract.getMyLuckyNumber();
-
-//       expect(storedLuckyNumber).to.be.not.undefined;
-//       expect(storedLuckyNumber).to.be.not.null;
-//       expect(storedLuckyNumber).to.be.not.equal(0);
-//       expect(storedLuckyNumber).to.be.equal(66);
-//     });
-//   });
-
-//   describe("updateLuckyNumber", () => {
-//     it("should revert with message '', when the given lucky number does not match with their existing lucky number", async () => {
-//       await contract.deployed();
-//       await contract.saveLuckyNumber(6);
-
-//       await expect(contract.updateLuckyNumber(8, 99)).to.be.revertedWith(
-//         "Not your previous lucky number."
-//       );
-//     });
-
-//     it("should update their lucky number, when given the exact existing lucky number stored", async () => {
-//       await contract.deployed();
-//       await contract.saveLuckyNumber(2);
-
-//       await contract.updateLuckyNumber(2, 22);
-//       const newLuckyNumber = await contract.getMyLuckyNumber();
-
-//       expect(newLuckyNumber).to.be.not.undefined;
-//       expect(newLuckyNumber).to.be.not.null;
-//       expect(newLuckyNumber.toNumber()).to.be.equal(22);
-//     });
-//   });
 });
