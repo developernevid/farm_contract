@@ -64,7 +64,7 @@ contract FarmContract is Ownable {
         require(totalDebenture == 0, "Wait until the debt is paid off");
         require(_amount > 0, "supply must be more than zero");
 
-        IERC20(tokenA).transferFrom(msg.sender, address(this), _amount);
+        IERC20(tokenB).transferFrom(msg.sender, address(this), _amount);
 
         harvestRewardsInternal(msg.sender);
         supplyList[msg.sender] = SupplyInfo(block.timestamp, _amount, rewardRate, shareOfReward(_amount));
@@ -75,7 +75,7 @@ contract FarmContract is Ownable {
     }
 
     function harvestRewardsInternal(address _account) internal {
-        require (supplyList[_account].timestamp != 0, "nothing to harvest");
+        if (supplyList[_account].timestamp != 0) return; //nothing to harvest
 
         uint stakingTime = block.timestamp - supplyList[_account].timestamp;
         uint256 rewardAmount = stakingTime * supplyList[_account].rewardRate * supplyList[_account].share;
@@ -98,7 +98,11 @@ contract FarmContract is Ownable {
         return IERC20(tokenA).balanceOf(address(this));
     }
 
-    function shareOfReward(uint256 _amount) internal view returns(uint256) {
+    function getTokenBBalance() public view returns (uint256) {
+        return IERC20(tokenB).balanceOf(address(this));
+    }
+
+    function shareOfReward(uint256 _amount) private view returns(uint256) {
         return _amount / getTokenABalance();
     }
 
