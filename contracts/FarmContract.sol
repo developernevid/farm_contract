@@ -75,7 +75,7 @@ contract FarmContract is Ownable {
     }
 
     function harvestRewardsInternal(address _account) internal {
-        if (supplyList[_account].timestamp != 0) return; //nothing to harvest
+        if (supplyList[_account].timestamp == 0) return; //nothing to harvest
 
         uint stakingTime = block.timestamp - supplyList[_account].timestamp;
         uint256 rewardAmount = stakingTime * supplyList[_account].rewardRate * supplyList[_account].share;

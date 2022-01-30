@@ -1,3 +1,4 @@
+import { Block } from "@ethersproject/providers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -76,6 +77,36 @@ describe("FarmContract", function () {
 
   });
 
+  function getCurrentBlockInfo(): Promise<Block>  {
+    return ethers.provider.getBlock(ethers.provider.getBlockNumber());
+  }
+
+  async function increaseAndFixTimestamp(seconds:number): Promise<any> {
+    const timestamp = (await getCurrentBlockInfo()).timestamp;
+    return await ethers.provider.send("evm_setNextBlockTimestamp",  [timestamp + seconds]);
+  } 
+
+  describe("harvestRewards", () => {
+    it("should give back tokenB even though there is no reward", async function () {
+      const STAKING_TIME_SECONDS = 25;
+      const SHARE = 1; // 1 supplier == 100 percents of reward
+      
+      await contract.supplyTokenA(100);
+      await contract.connect(bob).supplyTokenB(100);
+      await increaseAndFixTimestamp(STAKING_TIME_SECONDS);
+      await contract.connect(bob).harvestRewards();
+
+      let balanceA = (await contract.getTokenABalance()).toNumber();
+      console.log("balanceA", balanceA);
+      console.log("100 - STAKING_TIME_SECONDS * REWARD_RATE * SHARE", 100 - STAKING_TIME_SECONDS * REWARD_RATE * SHARE);
+      
+      expect(balanceA).to.equal(100 - STAKING_TIME_SECONDS * REWARD_RATE * SHARE);
+
+      let balanceB = (await contract.getTokenBBalance()).toNumber();
+      console.log("balanceB", balanceB);
+      expect(balanceB).to.equal(0);
+    });
+  });
   // describe("transferOwnership", () => {
   //   it("call transferingOwnership", async function () {
   //     await contract.deployed();
