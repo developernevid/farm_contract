@@ -125,10 +125,12 @@ describe("FarmContract", function () {
       const STAKING_TIME_SECONDS = 25;
       
       await contract.supplyTokenA(DEFAULT_SUPPLY_TOKEN_A);
-      await contract.connect(bob).supplyTokenB(100);
+      const BOB_SUPPLY = 100;
+      await contract.connect(bob).supplyTokenB(BOB_SUPPLY);
       await increaseAndFixTimestamp(STAKING_TIME_SECONDS);
 
-      await contract.connect(alice).supplyTokenB(300);
+      const ALICE_SUPPLY = 300;
+      await contract.connect(alice).supplyTokenB(ALICE_SUPPLY);
       await increaseAndFixTimestamp(STAKING_TIME_SECONDS);
       
       await contract.connect(bob).harvestRewards();
@@ -138,15 +140,12 @@ describe("FarmContract", function () {
       console.log("balanceA === ", balanceA);
       console.log("balanceB === ", balanceB);
 
-      console.log("200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3 === ", 200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3);
-      // expect(balanceA).to.equal(200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3); //debt == 900
-
-      console.log("balanceB === ", balanceA);
-      console.log("200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3 === ", 200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3);
-
+      console.log("200 - STAKING_TIME_SECONDS * REWARD_RATE * 1/3 === ", DEFAULT_SUPPLY_TOKEN_A - STAKING_TIME_SECONDS * 2 * REWARD_RATE * (BOB_SUPPLY / (BOB_SUPPLY + ALICE_SUPPLY)));
       
-      // expect(balanceB).to.equal(0);
+      expect(balanceA).to.equal(DEFAULT_SUPPLY_TOKEN_A - STAKING_TIME_SECONDS * 2 * REWARD_RATE * (BOB_SUPPLY / (BOB_SUPPLY + ALICE_SUPPLY)));
     });
+
+
   });
 
   
