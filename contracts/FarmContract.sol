@@ -12,9 +12,13 @@ contract FarmContract is Ownable {
         uint256 rewardRate;
     }
 
-    uint constant PRECISION = 10000; //experimental solution to improve the accuracy of calculations. This contract uses one part per million(ppm) notation https://en.wikipedia.org/wiki/Parts-per_notation
+    /**
+     * Experimental solution to improve the accuracy of calculations. This contract uses one part
+     * per million(ppm) notation https://en.wikipedia.org/wiki/Parts-per_notation
+     */
+    uint private constant PRECISION = 10000;
 
-    uint256 public totalDebenture;
+    uint256 public totalDebt;
     uint public rewardRate; 
     address public tokenA;
     address public tokenB;
@@ -31,7 +35,7 @@ contract FarmContract is Ownable {
 
     function supplyTokenA(uint256 _amount) public onlyOwner {
         IERC20(tokenA).transferFrom(this.owner(), address(this), _amount);
-        if (totalDebenture > 0 ) payOffAllDebts();
+        if (totalDebt > 0 ) payOffAllDebts();
     }
 
     function payOffAllDebts() internal {
@@ -39,7 +43,7 @@ contract FarmContract is Ownable {
             if (getTokenABalance() < debentureTable[lenders[i]]){
                 break;
             }
-            totalDebenture -= debentureTable[lenders[i]];
+            totalDebt -= debentureTable[lenders[i]];
 
             IERC20(tokenA).transfer(lenders[i], debentureTable[lenders[i]]);
             removeDebenture(i);
@@ -60,7 +64,7 @@ contract FarmContract is Ownable {
 
     function supplyTokenB(uint256 _amount) public {
         require(getTokenABalance() >= rewardRate, "Reward is not available");
-        require(totalDebenture == 0, "Wait until the debt is paid off");
+        require(totalDebt == 0, "Wait until the debt is paid off");
         require(_amount > 0, "supply must be more than zero");
 
         IERC20(tokenB).transferFrom(msg.sender, address(this), _amount);
@@ -75,24 +79,15 @@ contract FarmContract is Ownable {
         if(supplyList[_account].length == 0) return;
 
         (uint totalStakingTime, uint256 supplyAverage, uint256 rewardRateAverage) = accumulateSupplyInfo(_account);
-        console.log("[solidity] totalStakingTime", totalStakingTime);
-        console.log("[solidity] supplyAverage", supplyAverage);
-        console.log("[solidity] rewardRateAverage", rewardRateAverage);
-
         uint256 share = shareOfReward(supplyAverage);
-        uint256 rewardAmount;
-        if (totalStakingTime * rewardRateAverage * share < 100 * PRECISION){
-            rewardAmount = 1;
-        } else {
-            rewardAmount = totalStakingTime * rewardRateAverage * share / (100 * PRECISION);
-        }
-        console.log("[solidity] rewardAmount", rewardAmount);
-
+        uint256 rewardAmount = totalStakingTime * rewardRateAverage * share < 100 * PRECISION
+        ? 1
+        : totalStakingTime * rewardRateAverage * share / (100 * PRECISION);
         uint256 tokenABalance = getTokenABalance();
+
         if (tokenABalance < rewardAmount) {
-            console.log("[solidity] tokenABalance < rewardAmount", rewardAmount);
             uint256 debt = rewardAmount - tokenABalance;
-            totalDebenture += debt;
+            totalDebt += debt;
             debentureTable[_account] = debt;
             lenders.push(_account);
             IERC20(tokenA).transfer(_account, tokenABalance);
@@ -101,7 +96,7 @@ contract FarmContract is Ownable {
         }
 
         IERC20(tokenB).transfer(_account, supplyAverage); 
-        delete supplyList[_account]; // write default value of struct (https://docs.soliditylang.org/en/v0.8.11/types.html?highlight=delete#delete)
+        delete supplyList[_account];
     }
 
     function getTokenABalance() public view returns (uint256) {
@@ -112,6 +107,7 @@ contract FarmContract is Ownable {
         uint totalStakingTime = 0;
         uint256 totalSupply = 0;
         uint256 totalRewardRate = 0;
+
         for (uint256 i = 0; i < supplyList[_account].length; i++) {
             totalStakingTime += block.timestamp - supplyList[_account][i].timestamp;
             totalSupply += supplyList[_account][i].supplyAmount;
@@ -127,27 +123,16 @@ contract FarmContract is Ownable {
 
     function shareOfReward(uint256 _supplyAmount) private view returns(uint256) {
         uint256 tokenBBalance = getTokenBBalance();
-        console.log("[solidity] tokenBBalance", tokenBBalance);
-        console.log("[solidity] _supplyAmount", _supplyAmount);
-        uint256 result = calculatePercentage(tokenBBalance, _supplyAmount);
-
-        console.log("[solidity] result", result);
-        return result;
+        return calculatePercentage(tokenBBalance, _supplyAmount);
     }
 
     function addSupplyInfo(address _account, uint256 _supplyAmount) private {
         supplyList[_account].push(SupplyInfo(block.timestamp, _supplyAmount, rewardRate));
     }
 
-    function calculatePercentage(uint256 _totalAmount, uint256 _amount) private view returns(uint256) {
-        uint256 percentage = 0;
-        if(_totalAmount >  _amount * 100 * PRECISION)
-        {
-            percentage = 100 * PRECISION - (_amount % _totalAmount) * 100 * PRECISION / _totalAmount; //#TODO simplify formula
-            console.log("[solidity] calculatePercentage risk", percentage);
-        } else {
-            percentage = _amount * 100 * PRECISION / _totalAmount;
-        }
-        return percentage;
+    function calculatePercentage(uint256 _totalAmount, uint256 _amount) private pure returns(uint256) {
+        return _totalAmount >  _amount * 100 * PRECISION
+        ? 100 * PRECISION - (_amount % _totalAmount) * 100 * PRECISION / _totalAmount  // #TODO simplify formula
+        : _amount * 100 * PRECISION / _totalAmount;
     }
 }
