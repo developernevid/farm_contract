@@ -1,9 +1,7 @@
-# Advanced Sample Hardhat Project
+# Test task "Farming contract"
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
-
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
-
+Code was written by Andrii Nevidomyi (linkedin: https://www.linkedin.com/in/andrii-nevidomyi-4217b2222/, e-mail: developer.nevid@gmail.com)
+ 
 Try running some of the following tasks:
 
 ```shell
@@ -15,8 +13,6 @@ npx hardhat node
 npx hardhat help
 REPORT_GAS=true npx hardhat test
 npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
 npx eslint '**/*.{js,ts}'
 npx eslint '**/*.{js,ts}' --fix
 npx prettier '**/*.{json,sol,md}' --check
@@ -25,22 +21,28 @@ npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
 ```
 
-# Etherscan verification
+# TODO
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+1) Add dev-documentation for all of the functions of contract
+2) Increase test coverage level to high (~95%)
+3) Provide static analysis to identify vulnerabilities
+4) Describe business-logic
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
+# Coverage
 
-```shell
-hardhat run --network ropsten scripts/sample-script.ts
-```
+FarmContract`s test coverage is not completed.
+At the moment, it remains to finish coverage of the debt feature and the rest of the non-coverd public functions.
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
+--------------------|----------|----------|----------|----------|----------------|
+File                |  % Stmts | % Branch |  % Funcs |  % Lines |Uncovered Lines |
+--------------------|----------|----------|----------|----------|----------------|
+ contracts\         |    79.59 |    64.29 |    81.25 |       80 |                |
+  FarmContract.sol  |    79.17 |    64.29 |    78.57 |    79.59 |... 54,57,58,62 |
+  MintableERC20.sol |      100 |      100 |      100 |      100 |                |
+--------------------|----------|----------|----------|----------|----------------|
+All files           |    79.59 |    64.29 |    81.25 |       80 |                |
+--------------------|----------|----------|----------|----------|----------------|
 
 # Performance optimizations
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+For faster runs of the tests or scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
