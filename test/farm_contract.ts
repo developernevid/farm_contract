@@ -36,10 +36,10 @@ describe("FarmContract", function () {
     await tokenA.mint(governor.address, 10**6);
     await tokenA.approve(contract.address, 10**6);
 
-    await tokenB.mint(alice.address, 700);
-    await tokenB.connect(alice).approve(contract.address, 700);
-    await tokenB.mint(bob.address, 300);
-    await tokenB.connect(bob).approve(contract.address, 300);
+    await tokenB.mint(alice.address, 10**6);
+    await tokenB.connect(alice).approve(contract.address, 10**6);
+    await tokenB.mint(bob.address, 10**6);
+    await tokenB.connect(bob).approve(contract.address, 10**6);
   });
 
   describe("supplyTokenA", () => {
@@ -145,6 +145,29 @@ describe("FarmContract", function () {
       expect(balanceA).to.equal(DEFAULT_SUPPLY_TOKEN_A - STAKING_TIME_SECONDS * 2 * REWARD_RATE * (BOB_SUPPLY / (BOB_SUPPLY + ALICE_SUPPLY)));
     });
 
+    it(`Bob supply * 100 <  totalSupply. Test calculating of percentage with too big total supply `, async function () {
+      const STAKING_TIME_SECONDS = 25;
+      
+      await contract.supplyTokenA(DEFAULT_SUPPLY_TOKEN_A);
+      const BOB_SUPPLY = 100;
+      await contract.connect(bob).supplyTokenB(BOB_SUPPLY);
+      await increaseAndFixTimestamp(STAKING_TIME_SECONDS);
+
+      const ALICE_SUPPLY = 1000000;
+      await contract.connect(alice).supplyTokenB(ALICE_SUPPLY);
+      await increaseAndFixTimestamp(STAKING_TIME_SECONDS);
+      
+      await contract.connect(bob).harvestRewards();
+      let balanceA = (await contract.getTokenABalance()).toNumber();
+      let balanceB = (await contract.getTokenBBalance()).toNumber();
+      
+      console.log("balanceA === ", balanceA);
+      console.log("balanceB === ", balanceB);
+
+      const expectedReward = DEFAULT_SUPPLY_TOKEN_A - STAKING_TIME_SECONDS * 2 * REWARD_RATE * (BOB_SUPPLY / (BOB_SUPPLY + ALICE_SUPPLY));
+      
+      expect(balanceA).to.equal(Math.round(expectedReward));
+    });
 
   });
 

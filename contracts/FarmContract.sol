@@ -12,7 +12,7 @@ contract FarmContract is Ownable {
         uint256 rewardRate;
     }
 
-    uint constant PRESSION = 1;
+    uint constant PRECISION = 10000; //experimental solution to improve the accuracy of calculations. This contract uses one part per million(ppm) notation https://en.wikipedia.org/wiki/Parts-per_notation
 
     uint256 public totalDebenture;
     uint public rewardRate; 
@@ -20,10 +20,6 @@ contract FarmContract is Ownable {
     address public tokenB;
 
     mapping(address => SupplyInfo[]) public supplyList;
-    /* The reward is given for every second of staking. The amount of the reward depends on this attribute and 
-     * the ratio between the farmer's deposit and the total amount of token B on the balance of this contract.    
-     */
-
     mapping(address => uint256) public debentureTable;
     address[] public lenders;
 
@@ -83,7 +79,13 @@ contract FarmContract is Ownable {
         console.log("[solidity] supplyAverage", supplyAverage);
         console.log("[solidity] rewardRateAverage", rewardRateAverage);
 
-        uint256 rewardAmount = totalStakingTime * rewardRateAverage * shareOfReward(supplyAverage) / (100 * PRESSION);
+        uint256 share = shareOfReward(supplyAverage);
+        uint256 rewardAmount;
+        if (totalStakingTime * rewardRateAverage * share < 100 * PRECISION){
+            rewardAmount = 1;
+        } else {
+            rewardAmount = totalStakingTime * rewardRateAverage * share / (100 * PRECISION);
+        }
         console.log("[solidity] rewardAmount", rewardAmount);
 
         uint256 tokenABalance = getTokenABalance();
@@ -126,8 +128,8 @@ contract FarmContract is Ownable {
     function shareOfReward(uint256 _supplyAmount) private view returns(uint256) {
         uint256 tokenBBalance = getTokenBBalance();
         console.log("[solidity] tokenBBalance", tokenBBalance);
-        console.log("[solidity] supplyList[_account].supplyAmount", _supplyAmount);
-        (bool divByZero, uint256 result) = calculatePercentage(tokenBBalance, _supplyAmount, PRESSION);
+        console.log("[solidity] _supplyAmount", _supplyAmount);
+        uint256 result = calculatePercentage(tokenBBalance, _supplyAmount);
 
         console.log("[solidity] result", result);
         return result;
@@ -137,7 +139,15 @@ contract FarmContract is Ownable {
         supplyList[_account].push(SupplyInfo(block.timestamp, _supplyAmount, rewardRate));
     }
 
-    function calculatePercentage(uint256 _totalAmount, uint256 _amount, uint256 _precision) private pure returns(bool, uint256) {
-        return SafeMath.tryDiv(_amount * 100 * _precision, _totalAmount);
+    function calculatePercentage(uint256 _totalAmount, uint256 _amount) private view returns(uint256) {
+        uint256 percentage = 0;
+        if(_totalAmount >  _amount * 100 * PRECISION)
+        {
+            percentage = 100 * PRECISION - (_amount % _totalAmount) * 100 * PRECISION / _totalAmount; //#TODO simplify formula
+            console.log("[solidity] calculatePercentage risk", percentage);
+        } else {
+            percentage = _amount * 100 * PRECISION / _totalAmount;
+        }
+        return percentage;
     }
 }
